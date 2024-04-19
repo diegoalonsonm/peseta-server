@@ -29,6 +29,7 @@ app.use('/incomes', incomeRouter)
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies.token
+    console.log(token)
     if (!token) {
         return res.status(401).send('Access Denied')
     } else {
