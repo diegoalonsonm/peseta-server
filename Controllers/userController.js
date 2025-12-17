@@ -71,7 +71,6 @@ export class UserController {
             res.json(balance)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
-            console.log(err)
         }
     }
 

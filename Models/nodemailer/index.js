@@ -18,12 +18,12 @@ const passwordRevoceryEmail = ({object}) => {
 
 const transporter = nodemailer.createTransport({
     pool: true,
-    service: 'hotmail',
-    port: 2525,
+    service: 'gmail',
+    port: 587,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }, 
+    },
     maxConnections: 5
 })
 
@@ -35,11 +35,15 @@ export const sendRecoveryEmail = async ({object}) => {
         html: passwordRevoceryEmail({object})
     }
 
-    transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-            console.log(err)
-        } else {
-            console.log(info)
-        }
+    return new Promise((resolve, reject) => {
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                console.error('Error sending email:', err)
+                reject(err)
+            } else {
+                console.log('Email sent successfully:', info.response)
+                resolve(info)
+            }
+        })
     })
 }

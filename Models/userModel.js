@@ -1,5 +1,7 @@
 import { db } from './database/db.js';
 import { sendRecoveryEmail } from './nodemailer/index.js';
+import bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 export class UserModel {
     static async getAll() {
@@ -15,6 +17,14 @@ export class UserModel {
         return user
     }
 
+    static async getUserIdByEmail({email}) {
+        const user = await db.sequelize.query('SELECT id FROM users WHERE email = :email', {
+            replacements: { email },
+            type: db.sequelize.QueryTypes.SELECT
+        })
+        return user.length > 0 ? user[0].id : null
+    }
+
     static async checkEmailExists({email}) {
         const user = await db.sequelize.query('SELECT * FROM users WHERE email = :email', {
             replacements: { email },
@@ -24,69 +34,111 @@ export class UserModel {
     }
 
     static async createNewUser({user}) {
-        const { name, lastName, email, password } = user
+        try {
+            const { name, lastName, email, password } = user
 
-        const newUser = await db.sequelize.query('INSERT INTO users (name, lastName, email, password, availableBudget) VALUES (:name, :lastName, :email, :password, 0.0)', {
-            replacements: { name, lastName, email, password },
-            type: db.sequelize.QueryTypes.INSERT
-        }).catch(err => {
-            console.log(err)
-        })
-        return newUser
+            // Generate UUID for new user
+            const id = randomUUID()
+
+            // Hash password before storing
+            const saltRounds = 10
+            const hashedPassword = await bcrypt.hash(password, saltRounds)
+
+            const newUser = await db.sequelize.query('INSERT INTO users (id, name, lastName, email, password, availableBudget) VALUES (:id, :name, :lastName, :email, :password, 0.0)', {
+                replacements: { id, name, lastName, email, password: hashedPassword },
+                type: db.sequelize.QueryTypes.INSERT
+            })
+
+            console.log('User created successfully:', email, 'with ID:', id)
+            return newUser
+        } catch (err) {
+            console.error('Error creating user:', err)
+            throw err
+        }
     }
 
-    static async resetPassword({user}) {   
-        const { email, password } = user
+    static async resetPassword({user}) {
+        try {
+            const { email, password } = user
 
-        const userReset = await db.sequelize.query('UPDATE users SET password = :password WHERE email = :email', {
-            replacements: { password, email },
-            type: db.sequelize.QueryTypes.UPDATE
-        }).catch(err => {
-            console.log(err)
-        })
-        await sendRecoveryEmail({object: {email, password}})
-        return userReset
+            // Hash new password before storing
+            const saltRounds = 10
+            const hashedPassword = await bcrypt.hash(password, saltRounds)
+
+            const userReset = await db.sequelize.query('UPDATE users SET password = :password WHERE email = :email', {
+                replacements: { password: hashedPassword, email },
+                type: db.sequelize.QueryTypes.UPDATE
+            })
+
+            console.log('Password updated in database for:', email)
+
+            // Send plain text password to user via email (they'll need to change it later)
+            await sendRecoveryEmail({object: {email, password}})
+
+            return userReset
+        } catch (err) {
+            console.error('Error in resetPassword:', err)
+            throw err
+        }
     }
 
     static async getBalance({email}) {
-        const incomeResult = await db.sequelize.query('SELECT SUM(amount) FROM income WHERE userEmail = :email', {
-            replacements: { email },
-            type: db.sequelize.QueryTypes.SELECT
-        }).catch(err => {
-            console.log(err.message)
-        })
+        try {
+            // First get userId from email
+            const userId = await this.getUserIdByEmail({email})
 
-        const expenseResult = await db.sequelize.query('SELECT SUM(amount) FROM expense WHERE userEmail = :email', {
-            replacements: { email },
-            type: db.sequelize.QueryTypes.SELECT
-        }).catch(err => {
-            console.log(err.message)
-        })
+            if (!userId) {
+                throw new Error('User not found')
+            }
 
-        const balanceResult = await db.sequelize.query('SELECT availableBudget FROM users WHERE email = :email', {
-            replacements: { email },
-            type: db.sequelize.QueryTypes.SELECT
-        }).catch(err => {
-            console.log(err.message)
-        })
+            const incomeResult = await db.sequelize.query('SELECT SUM(amount) FROM income WHERE userId = :userId', {
+                replacements: { userId },
+                type: db.sequelize.QueryTypes.SELECT
+            })
 
-        const incomeAmount = Number(incomeResult[0]['SUM(amount)'])
-        const expenseAmount = Number(expenseResult[0]['SUM(amount)'] )
-        const balance = Number(balanceResult[0].availableBudget)
+            const expenseResult = await db.sequelize.query('SELECT SUM(amount) FROM expense WHERE userId = :userId', {
+                replacements: { userId },
+                type: db.sequelize.QueryTypes.SELECT
+            })
 
-        const totalBalance = balance + incomeAmount - expenseAmount
-        return totalBalance        
+            const balanceResult = await db.sequelize.query('SELECT availableBudget FROM users WHERE id = :userId', {
+                replacements: { userId },
+                type: db.sequelize.QueryTypes.SELECT
+            })
+
+            const incomeAmount = Number(incomeResult[0]['SUM(amount)']) || 0
+            const expenseAmount = Number(expenseResult[0]['SUM(amount)']) || 0
+            const balance = Number(balanceResult[0].availableBudget) || 0
+
+            const totalBalance = balance + incomeAmount - expenseAmount
+            return totalBalance
+        } catch (err) {
+            console.error('Error getting balance:', err)
+            throw err
+        }
     }
 
     static async updateUserInfo({user}) {
-        const { name, lastName, email, password } = user
+        try {
+            const { name, lastName, email, password } = user
 
-        const updatedUser = await db.sequelize.query('UPDATE users SET name = :name, lastName = :lastName, password = :password WHERE email = :email', {
-            replacements: { name, lastName, email, password },
-            type: db.sequelize.QueryTypes.UPDATE
-        }).catch(err => {
-            console.log(err)
-        })
-        return updatedUser
+            // If password is being updated, hash it
+            let hashedPassword = password
+            if (password) {
+                const saltRounds = 10
+                hashedPassword = await bcrypt.hash(password, saltRounds)
+            }
+
+            const updatedUser = await db.sequelize.query('UPDATE users SET name = :name, lastName = :lastName, password = :password WHERE email = :email', {
+                replacements: { name, lastName, email, password: hashedPassword },
+                type: db.sequelize.QueryTypes.UPDATE
+            })
+
+            console.log('User info updated successfully:', email)
+            return updatedUser
+        } catch (err) {
+            console.error('Error updating user info:', err)
+            throw err
+        }
     }
 }

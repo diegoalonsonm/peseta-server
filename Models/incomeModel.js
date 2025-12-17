@@ -1,36 +1,47 @@
 import { db } from "./database/db.js";
+import { randomUUID } from 'crypto';
 
 export class IncomeModel {
-    static async getAllFromUser({email}) {
-        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userEmail = :email order by date desc', {
-            replacements: { email },
+    static async getAllFromUser({userId}) {
+        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userId = :userId order by date desc', {
+            replacements: { userId },
             type: db.sequelize.QueryTypes.SELECT
         })
         return incomes
     }
 
-    static async getLastFiveFromUser({email}) {
-        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userEmail = :email order by date desc limit 5', {
-            replacements: { email },
+    static async getLastFiveFromUser({userId}) {
+        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userId = :userId order by date desc limit 5', {
+            replacements: { userId },
             type: db.sequelize.QueryTypes.SELECT
         })
         return incomes
     }
 
-    static async getTotalAmountFromUser({email}) {
-        const totalAmount =  await db.sequelize.query('SELECT SUM(amount) as totalAmount FROM income WHERE userEmail = :email', {
-            replacements: { email },
+    static async getTotalAmountFromUser({userId}) {
+        const totalAmount =  await db.sequelize.query('SELECT SUM(amount) as totalAmount FROM income WHERE userId = :userId', {
+            replacements: { userId },
             type: db.sequelize.QueryTypes.SELECT
         })
         return totalAmount
     }
 
-    static async addIncome({email, amount, description, date, category}) {
-        const income = await db.sequelize.query('insert into income (description, categoryId, amount, date, userEmail) VALUES (:description, :category, :amount, :date, :email)', {
-            replacements: { description, category, amount, date, email},
-            type: db.sequelize.QueryTypes.INSERT
-        })
-        return income
+    static async addIncome({userId, amount, description, date, category}) {
+        try {
+            // Generate UUID for new income
+            const id = randomUUID()
+
+            const income = await db.sequelize.query('INSERT INTO income (id, description, categoryId, amount, date, userId) VALUES (:id, :description, :category, :amount, :date, :userId)', {
+                replacements: { id, description, category, amount, date, userId },
+                type: db.sequelize.QueryTypes.INSERT
+            })
+
+            console.log('Income created successfully with ID:', id)
+            return income
+        } catch (err) {
+            console.error('Error creating income:', err)
+            throw err
+        }
     }
 
     static async getEveryMonthIncome({email}) {

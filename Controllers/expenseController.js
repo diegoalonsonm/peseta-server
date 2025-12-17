@@ -1,10 +1,17 @@
 import { ExpenseModel } from "../Models/expenseModel.js";
+import { UserModel } from "../Models/userModel.js";
 
 export class ExpenseController {
     static async getAllFromUser(req, res) {
         try {
             const email = req.params.email
-            const expenses = await ExpenseModel.getAllFromUser({email})
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const expenses = await ExpenseModel.getAllFromUser({userId})
             res.json(expenses)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
@@ -14,7 +21,13 @@ export class ExpenseController {
     static async getLastFiveFromUser(req, res) {
         try {
             const email = req.params.email
-            const expenses = await ExpenseModel.getLastFiveFromUser({email})
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const expenses = await ExpenseModel.getLastFiveFromUser({userId})
             res.json(expenses)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
@@ -24,7 +37,13 @@ export class ExpenseController {
     static async getTotalAmountFromUser(req, res) {
         try {
             const email = req.params.email
-            const totalAmount = await ExpenseModel.getTotalAmountFromUser({email})
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const totalAmount = await ExpenseModel.getTotalAmountFromUser({userId})
             res.json(totalAmount)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
@@ -34,9 +53,14 @@ export class ExpenseController {
     static async addExpense(req, res) {
         try {
             const { email, amount, description, category } = req.body
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
             const date = new Date().toISOString().split('T')[0]
-            console.log(date)
-            const expense = await ExpenseModel.addExpense({email, amount, description, date, category})
+            const expense = await ExpenseModel.addExpense({userId, amount, description, date, category})
             res.json(expense)
         } catch (err) {
             res.status(500).send('error: ' + err.message)

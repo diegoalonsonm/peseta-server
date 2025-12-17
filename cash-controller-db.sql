@@ -1,46 +1,42 @@
-create database cashController;
-use cashController;
+DROP DATABASE IF EXISTS cashController;
+CREATE DATABASE cashController;
+USE cashController;
 
-create table users (
-    name varchar(25) not null,
-    lastName varchar(40) not null,
-    email varchar(30) not null primary key,
-    password varchar(30) not null,
-    availableBudget decimal (10, 2),
-    profilePic text
+CREATE TABLE category (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    description VARCHAR(50) NOT NULL
 );
 
-insert into users (name, lastName, email, password, availableBudget) values ('John', 'Doe', 'johndoe@gmail.com', '123456', 0.0);
-
-create table expense (
-	id int auto_increment primary key,
-    description varchar(255) not null,
-    categoryId int not null,
-    amount decimal(10, 2),
-    date date not null,
-    userEmail varchar(30) not null,
-    foreign key (userEmail) references users(email),
-    foreign key (categoryId) references category(id)
+CREATE TABLE users (
+    id CHAR(36) PRIMARY KEY, 
+    name VARCHAR(50) NOT NULL,
+    lastName VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    availableBudget DECIMAL(12, 2) DEFAULT 0.00,
+    profilePic TEXT
 );
 
-insert into expense (description, categoryId, amount, date, userEmail) values ('Lunch', 1, 10.0, '2024-01-01', 'johndoe@gmail.com');
-
-create table income (
-	id int auto_increment primary key,
-    description varchar(255) not null,
-    categoryId int not null,
-    amount decimal(10, 2),
-    date date not null,
-    userEmail varchar(30) not null,
-    foreign key (userEmail) references users(email),
-    foreign key (categoryId) references category(id)
+CREATE TABLE expense (
+    id CHAR(36) PRIMARY KEY,
+    description VARCHAR(255) NOT NULL,
+    categoryId INT NOT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    date DATE NOT NULL,
+    userId CHAR(36) NOT NULL, 
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES category(id)
 );
 
-insert into income (description, categoryId, amount, date, userEmail) values ('Salary', 9, 1000, '2024-01-02', 'johndoe@gmail.com');
-
-create table category (
-	id int auto_increment primary key,
-    description varchar(255) not null
+CREATE TABLE income (
+    id CHAR(36) PRIMARY KEY,
+    description VARCHAR(255) NOT NULL,
+    categoryId INT NOT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    date DATE NOT NULL,
+    userId CHAR(36) NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES category(id)
 );
 
 insert into category (description) values ('Food');

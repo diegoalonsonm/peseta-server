@@ -7,8 +7,12 @@ import { db } from './Models/database/db.js';
 import bodyParser from 'body-parser';
 import expenseRouter from './Routes/expenseRouter.js';
 import incomeRouter from './Routes/incomeRouter.js';
+import bcrypt from 'bcrypt';
+import { config } from 'dotenv';
 
-const PORT = 3930 
+config();
+
+const PORT = process.env.PORT || 3930
 
 const app = express()
 
@@ -29,15 +33,13 @@ app.use('/incomes', incomeRouter)
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies.token
-    console.log(token)
     if (!token) {
         return res.status(401).send('Access Denied')
     } else {
-        jwt.verify(token, 'secret', (err, data) => {
+        jwt.verify(token, process.env.JWT_SECRET, (err, data) => {
             if (err) {
                 return res.status(401).send('Access Denied')
             } else {
-                return res.status(200).send('Access Granted')
                 next()
             }
         })
@@ -45,27 +47,46 @@ const verifyToken = (req, res, next) => {
 }
 
 app.get('/', verifyToken, (req, res) => {
-    return res.status(200)
+    return res.status(200).send('Welcome to Cash Controller API')
 })
 
-app.post('/login', (req, res) => {
-    const { email, password, id } = req.body
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body
+        console.log('Login attempt for email:', email)
 
-    db.sequelize.query('SELECT * FROM users WHERE email = :email AND password = :password', {
-        replacements: { email, password },
-        type: db.sequelize.QueryTypes.SELECT,
-    }).then(user => { 
-        if (user.length > 0) {
-            const token = jwt.sign({ email, password, id }, 'secret', { expiresIn: '1h' })
-            res.cookie('token', token, { httpOnly: true })
-            return res.status(200).send('Login successful')
-        } else {
+        // Fetch user by email only (not password)
+        const users = await db.sequelize.query('SELECT * FROM users WHERE email = :email', {
+            replacements: { email },
+            type: db.sequelize.QueryTypes.SELECT,
+        })
+
+        if (users.length === 0) {
+            console.log('User not found:', email)
             return res.status(401).send('Invalid credentials')
         }
-    }).catch(err => {
-        console.log(err)
+
+        const user = users[0]
+        console.log('User found, verifying password...')
+
+        // Compare hashed password
+        const validPassword = await bcrypt.compare(password, user.password)
+        console.log('Password valid:', validPassword)
+
+        if (!validPassword) {
+            console.log('Invalid password for user:', email)
+            return res.status(401).send('Invalid credentials')
+        }
+
+        // Sign token with user data (don't include password)
+        const token = jwt.sign({ email: user.email, id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' })
+        res.cookie('token', token, { httpOnly: true })
+        console.log('Login successful for:', email)
+        return res.status(200).send('Login successful')
+    } catch (err) {
+        console.error('Login error:', err)
         return res.status(500).send('Internal Server Error')
-    })
+    }
 })
 
 app.get('/logout', (req, res) => {
@@ -74,5 +95,4 @@ app.get('/logout', (req, res) => {
 })
 
 app.listen(PORT, () => {
-    console.log('Server is running on port ' + PORT)
 })

@@ -1,3 +1,6 @@
 node_modules
 .env
 /nbproject/private/
+
+ warp.md
+ claude.md
