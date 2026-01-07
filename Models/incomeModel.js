@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 
 export class IncomeModel {
     static async getAllFromUser({userId}) {
-        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userId = :userId order by date desc', {
+        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userId = :userId AND active = true order by date desc', {
             replacements: { userId },
             type: db.sequelize.QueryTypes.SELECT
         })
@@ -11,7 +11,7 @@ export class IncomeModel {
     }
 
     static async getLastFiveFromUser({userId}) {
-        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userId = :userId order by date desc limit 5', {
+        const incomes = await db.sequelize.query('SELECT * FROM income WHERE userId = :userId AND active = true order by date desc limit 5', {
             replacements: { userId },
             type: db.sequelize.QueryTypes.SELECT
         })
@@ -19,7 +19,7 @@ export class IncomeModel {
     }
 
     static async getTotalAmountFromUser({userId}) {
-        const totalAmount =  await db.sequelize.query('SELECT SUM(amount) as totalAmount FROM income WHERE userId = :userId', {
+        const totalAmount =  await db.sequelize.query('SELECT SUM(amount) as totalAmount FROM income WHERE userId = :userId AND active = true', {
             replacements: { userId },
             type: db.sequelize.QueryTypes.SELECT
         })
@@ -31,7 +31,7 @@ export class IncomeModel {
             // Generate UUID for new income
             const id = randomUUID()
 
-            const income = await db.sequelize.query('INSERT INTO income (id, description, categoryId, amount, date, userId) VALUES (:id, :description, :category, :amount, :date, :userId)', {
+            const income = await db.sequelize.query('INSERT INTO income (id, description, categoryId, amount, date, userId, active) VALUES (:id, :description, :category, :amount, :date, :userId, true)', {
                 replacements: { id, description, category, amount, date, userId },
                 type: db.sequelize.QueryTypes.INSERT
             })
@@ -44,21 +44,49 @@ export class IncomeModel {
         }
     }
 
-    static async getEveryMonthIncome({email}) {
-        let allMonthsIncome = []
+    static async getMonthlyIncome({userId, year}) {
+        const currentYear = year || new Date().getFullYear()
+        const monthlyData = await db.sequelize.query(
+            `SELECT MONTH(date) as month, SUM(amount) as totalAmount
+             FROM income
+             WHERE userId = :userId AND YEAR(date) = :year AND active = true
+             GROUP BY MONTH(date)
+             ORDER BY MONTH(date)`,
+            {
+                replacements: { userId, year: currentYear },
+                type: db.sequelize.QueryTypes.SELECT
+            }
+        )
 
-        for (let i = 1; i <= 12; i++) {
-            const monthIncome = await db.sequelize.query('SELECT SUM(amount) FROM income WHERE userEmail = :email AND MONTH(date) = :month', {
-                replacements: { email, month: i }, type: db.sequelize.QueryTypes.SELECT
-            }).then(result => {
-                return Number(result[0] && result[0]['SUM(amount)'] ? result[0]['SUM(amount)'] : 0)
-            }).catch(err => {
-                console.log(err.message)
-            })
-            
-            allMonthsIncome.push(monthIncome)
-        }    
-        
-        return allMonthsIncome        
+        // Fill in missing months with 0
+        const result = Array(12).fill(0)
+        monthlyData.forEach(item => {
+            result[item.month - 1] = parseFloat(item.totalAmount)
+        })
+
+        return result
+    }
+
+    static async softDeleteIncome({id, userId}) {
+        try {
+            const income = await db.sequelize.query(
+                'UPDATE income SET active = false WHERE id = :id AND userId = :userId AND active = true',
+                {
+                    replacements: { id, userId },
+                    type: db.sequelize.QueryTypes.UPDATE
+                }
+            )
+
+            // Check if any rows were affected
+            if (income[0] === 0) {
+                return { success: false, message: 'Income not found or already deleted' }
+            }
+
+            console.log('Income soft deleted successfully:', id)
+            return { success: true, message: 'Income deleted successfully' }
+        } catch (err) {
+            console.error('Error soft deleting income:', err)
+            throw err
+        }
     }
 }

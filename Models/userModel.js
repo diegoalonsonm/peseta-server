@@ -91,12 +91,12 @@ export class UserModel {
                 throw new Error('User not found')
             }
 
-            const incomeResult = await db.sequelize.query('SELECT SUM(amount) FROM income WHERE userId = :userId', {
+            const incomeResult = await db.sequelize.query('SELECT SUM(amount) FROM income WHERE userId = :userId AND active = true', {
                 replacements: { userId },
                 type: db.sequelize.QueryTypes.SELECT
             })
 
-            const expenseResult = await db.sequelize.query('SELECT SUM(amount) FROM expense WHERE userId = :userId', {
+            const expenseResult = await db.sequelize.query('SELECT SUM(amount) FROM expense WHERE userId = :userId AND active = true', {
                 replacements: { userId },
                 type: db.sequelize.QueryTypes.SELECT
             })

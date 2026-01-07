@@ -67,11 +67,18 @@ export class ExpenseController {
         }
     }
 
-    static async getEveryMonthExpense(req, res) {
+    static async getAmountByCategory(req, res) {
         try {
             const email = req.params.email
-            const allMonthsExpense = await ExpenseModel.getEveryMonthExpense({email})
-            res.json(allMonthsExpense)
+            const year = req.query.year ? parseInt(req.query.year) : undefined
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const categoryAmounts = await ExpenseModel.getAmountByCategory({userId, year})
+            res.json(categoryAmounts)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
         }
@@ -80,18 +87,59 @@ export class ExpenseController {
     static async getTop5Categories(req, res) {
         try {
             const email = req.params.email
-            const top5Categories = await ExpenseModel.getTop5Categories({email})
-            res.json(top5Categories)
+            const year = req.query.year ? parseInt(req.query.year) : undefined
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const top5 = await ExpenseModel.getTop5Categories({userId, year})
+            res.json(top5)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
         }
     }
 
-    static async getExpenseAmountByCategory (req, res) {
+    static async getMonthlyExpense(req, res) {
         try {
             const email = req.params.email
-            const expenseAmountByCategory = await ExpenseModel.getExpenseAmountByCategory({email})
-            res.json(expenseAmountByCategory)
+            const year = req.query.year ? parseInt(req.query.year) : undefined
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const monthlyExpense = await ExpenseModel.getMonthlyExpense({userId, year})
+            res.json(monthlyExpense)
+        } catch (err) {
+            res.status(500).send('error: ' + err.message)
+        }
+    }
+
+    static async deleteExpense(req, res) {
+        try {
+            const { id } = req.params
+            const email = req.body.email || req.query.email
+
+            if (!email) {
+                return res.status(400).send('Email is required')
+            }
+
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const result = await ExpenseModel.softDeleteExpense({id, userId})
+
+            if (!result.success) {
+                return res.status(404).send(result.message)
+            }
+
+            res.json({ success: true, message: result.message })
         } catch (err) {
             res.status(500).send('error: ' + err.message)
         }

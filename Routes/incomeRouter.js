@@ -3,11 +3,12 @@ import { IncomeController } from "../Controllers/incomeController.js";
 
 const incomeRouter = Router()
 
-incomeRouter.get('/:email', IncomeController.getAllFromUser)
 incomeRouter.get('/lastFive/:email', IncomeController.getLastFiveFromUser)
 incomeRouter.get('/total/:email', IncomeController.getTotalAmountFromUser)
-incomeRouter.get('/monthlyIncome/:email', IncomeController.getEveryMonthIncome)
+incomeRouter.get('/monthlyIncome/:email', IncomeController.getMonthlyIncome)
+incomeRouter.get('/:email', IncomeController.getAllFromUser)
 
 incomeRouter.post('/', IncomeController.addIncome)
+incomeRouter.delete('/:id', IncomeController.deleteIncome)
 
 export default incomeRouter

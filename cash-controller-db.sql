@@ -24,6 +24,7 @@ CREATE TABLE expense (
     amount DECIMAL(12, 2) NOT NULL,
     date DATE NOT NULL,
     userId CHAR(36) NOT NULL, 
+    active BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (categoryId) REFERENCES category(id)
 );
@@ -35,6 +36,7 @@ CREATE TABLE income (
     amount DECIMAL(12, 2) NOT NULL,
     date DATE NOT NULL,
     userId CHAR(36) NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (categoryId) REFERENCES category(id)
 );

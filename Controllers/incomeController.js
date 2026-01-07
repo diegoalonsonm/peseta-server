@@ -66,12 +66,46 @@ export class IncomeController {
             res.status(500).send('error: ' + err.message)
         }
     }
-    
-    static async getEveryMonthIncome(req, res) {
+
+    static async getMonthlyIncome(req, res) {
         try {
             const email = req.params.email
-            const everyMonthIncome = await IncomeModel.getEveryMonthIncome({email})
-            res.json(everyMonthIncome)
+            const year = req.query.year ? parseInt(req.query.year) : undefined
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const monthlyIncome = await IncomeModel.getMonthlyIncome({userId, year})
+            res.json(monthlyIncome)
+        } catch (err) {
+            res.status(500).send('error: ' + err.message)
+        }
+    }
+
+    static async deleteIncome(req, res) {
+        try {
+            const { id } = req.params
+            const email = req.body.email || req.query.email
+
+            if (!email) {
+                return res.status(400).send('Email is required')
+            }
+
+            const userId = await UserModel.getUserIdByEmail({email})
+
+            if (!userId) {
+                return res.status(404).send('User not found')
+            }
+
+            const result = await IncomeModel.softDeleteIncome({id, userId})
+
+            if (!result.success) {
+                return res.status(404).send(result.message)
+            }
+
+            res.json({ success: true, message: result.message })
         } catch (err) {
             res.status(500).send('error: ' + err.message)
         }
