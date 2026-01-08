@@ -122,19 +122,45 @@ export class UserModel {
         try {
             const { name, lastName, email, password } = user
 
-            // If password is being updated, hash it
-            let hashedPassword = password
-            if (password) {
-                const saltRounds = 10
-                hashedPassword = await bcrypt.hash(password, saltRounds)
+            // Build dynamic UPDATE query based on provided fields
+            const updates = []
+            const replacements = { email }
+
+            // Only update name if provided
+            if (name !== undefined && name !== null && name !== '') {
+                updates.push('name = :name')
+                replacements.name = name
             }
 
-            const updatedUser = await db.sequelize.query('UPDATE users SET name = :name, lastName = :lastName, password = :password WHERE email = :email', {
-                replacements: { name, lastName, email, password: hashedPassword },
+            // Only update lastName if provided
+            if (lastName !== undefined && lastName !== null && lastName !== '') {
+                updates.push('lastName = :lastName')
+                replacements.lastName = lastName
+            }
+
+            // Only update password if provided (and hash it)
+            if (password !== undefined && password !== null && password !== '') {
+                const saltRounds = 10
+                const hashedPassword = await bcrypt.hash(password, saltRounds)
+                updates.push('password = :password')
+                replacements.password = hashedPassword
+            }
+
+            // If no fields to update, return early
+            if (updates.length === 0) {
+                console.log('No fields to update for user:', email)
+                return { message: 'No fields to update' }
+            }
+
+            // Build and execute dynamic query
+            const query = `UPDATE users SET ${updates.join(', ')} WHERE email = :email`
+
+            const updatedUser = await db.sequelize.query(query, {
+                replacements,
                 type: db.sequelize.QueryTypes.UPDATE
             })
 
-            console.log('User info updated successfully:', email)
+            console.log('User info updated successfully:', email, 'Fields updated:', updates)
             return updatedUser
         } catch (err) {
             console.error('Error updating user info:', err)

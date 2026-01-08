@@ -1,16 +1,16 @@
 import { Router } from "express";
 import { UserController } from "../Controllers/userController.js";
 
-const userRotuer = Router()
- 
-userRotuer.get('/', UserController.getAll)
-userRotuer.get('/:email', UserController.getOne)
-userRotuer.post('/', UserController.newUser)
-//userRotuer.put('/:email', UserController.updateUserInfo)
+const userRouter = Router()
 
-userRotuer.post('/recovery', UserController.resetPassword) 
+userRouter.get('/', UserController.getAll)
+userRouter.get('/:email', UserController.getOne)
+userRouter.post('/', UserController.newUser)
+userRouter.put('/:email', UserController.updateUserInfo)
 
-userRotuer.get('/balance/:email', UserController.getBalance)
-userRotuer.get('/balance/update/:email', UserController.updateBalance)
+userRouter.post('/recovery', UserController.resetPassword)
 
-export default userRotuer
+userRouter.get('/balance/:email', UserController.getBalance)
+userRouter.get('/balance/update/:email', UserController.updateBalance)
+
+export default userRouter
