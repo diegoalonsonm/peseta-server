@@ -7,6 +7,7 @@ import { db } from './Models/database/db.js';
 import bodyParser from 'body-parser';
 import expenseRouter from './Routes/expenseRouter.js';
 import incomeRouter from './Routes/incomeRouter.js';
+import budgetRouter from './Routes/budgetRouter.js';
 import bcrypt from 'bcrypt';
 import { config } from 'dotenv';
 
@@ -30,6 +31,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use('/users', userRouter)
 app.use('/expenses', expenseRouter)
 app.use('/incomes', incomeRouter)
+app.use('/budgets', budgetRouter)
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies.token

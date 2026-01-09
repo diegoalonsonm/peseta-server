@@ -56,3 +56,22 @@ insert into category (description) values ('Savings');
 insert into category (description) values ('Loans');
 insert into category (description) values ('Insurance');
 insert into category (description) values ('Others');
+
+CREATE TABLE budget (
+    id CHAR(36) PRIMARY KEY,            
+    userId CHAR(36) NOT NULL,           
+    categoryId INT NOT NULL,            
+    limitAmount DECIMAL(12, 2) NOT NULL,
+    periodType ENUM('weekly', 'biweekly', 'monthly') NOT NULL,
+    startDate DATE NOT NULL,
+    startDate DATE NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES category(id),
+    UNIQUE KEY unique_active_budget (userId, categoryId, active)
+);
+
+CREATE INDEX idx_budget_user_active ON budget(userId, active);
+CREATE INDEX idx_budget_category ON budget(categoryId);
