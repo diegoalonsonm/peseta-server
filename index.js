@@ -18,8 +18,24 @@ const PORT = process.env.PORT || 3930
 const app = express()
 
 app.use(express.json())
+
+// CORS configuration to support multiple origins (comma-separated in env var)
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:3000']
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or Postman)
+        if (!origin) return callback(null, true)
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            console.log('Blocked by CORS:', origin)
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }))
@@ -83,13 +99,17 @@ app.post('/login', async (req, res) => {
 
         // Sign token with user data (don't include password)
         const token = jwt.sign({ email: user.email, id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' })
+
+        // Cookie configuration for mobile browser compatibility
+        const isProduction = process.env.NODE_ENV === 'production'
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 3600000 // 1 hour in milliseconds
+            secure: true, // Always use secure in production (required for sameSite: 'none')
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 3600000, // 1 hour in milliseconds
+            path: '/'
         })
-        console.log('Login successful for:', email)
+        console.log('Login successful for:', email, 'Cookie settings:', { secure: true, sameSite: isProduction ? 'none' : 'lax' })
         return res.status(200).send('Login successful')
     } catch (err) {
         console.error('Login error:', err)
@@ -98,10 +118,12 @@ app.post('/login', async (req, res) => {
 })
 
 app.get('/logout', (req, res) => {
+    const isProduction = process.env.NODE_ENV === 'production'
     res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        secure: true, // Must match the cookie settings used when setting the cookie
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/'
     })
     return res.status(200).send('Logged out')
 })
