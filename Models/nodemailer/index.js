@@ -6,12 +6,12 @@ config()
 const passwordRevoceryEmail = ({object}) => {
     return `
         <div>
-            <h1>Thanks for using Cash Controller</h1>
-            <p>Your password was succesfully changed</p>
-            <p>Your password is the following: ${object.password}</p>
+            <h1>Gracias por usar Peseta</h1>
+            <p>Tu contraseña ha sido cambiada exitosamente</p>
+            <p>Tu contraseña es la siguiente: ${object.password}</p>
             <br>
-            <p>If there are any mistakes feel free to contact us!</p>
-            <p>Best regards, Cash Controller Team</p>
+            <p>Si hay algún error, no dudes en contactarnos!</p>
+            <p>Saludos cordiales, Equipo de Peseta</p>
         </div>
     `
 }
@@ -31,7 +31,7 @@ export const sendRecoveryEmail = async ({object}) => {
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: object.email,
-        subject: 'Password Recovery',
+        subject: 'Cambio de contraseña',
         html: passwordRevoceryEmail({object})
     }
 

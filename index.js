@@ -19,7 +19,7 @@ const app = express()
 
 app.use(express.json())
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://cash-controller-client.vercel.app'],
+    origin: process.env.CORS_ORIGIN,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }))

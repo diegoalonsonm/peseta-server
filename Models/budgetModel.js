@@ -438,4 +438,32 @@ export class BudgetModel {
             throw err;
         }
     }
+
+    /**
+     * Get a single budget by ID
+     * @param {Object} params
+     * @param {string} params.budgetId - Budget UUID
+     * @param {string} params.userId - User UUID (for security)
+     * @returns {Object|null} Budget or null if not found
+     */
+    static async getBudgetById({ budgetId, userId }) {
+        try {
+            const budget = await db.sequelize.query(
+                `SELECT b.*, c.description as categoryName
+                 FROM budget b
+                 JOIN category c ON b.categoryId = c.id
+                 WHERE b.id = :budgetId AND b.userId = :userId AND b.active = true
+                 LIMIT 1`,
+                {
+                    replacements: { budgetId, userId },
+                    type: db.sequelize.QueryTypes.SELECT
+                }
+            );
+
+            return budget.length > 0 ? budget[0] : null;
+        } catch (err) {
+            console.error('Error getting budget by ID:', err);
+            throw err;
+        }
+    }
 }

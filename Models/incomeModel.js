@@ -89,4 +89,67 @@ export class IncomeModel {
             throw err
         }
     }
+
+    static async getIncomeById({id, userId}) {
+        try {
+            const income = await db.sequelize.query(
+                'SELECT * FROM income WHERE id = :id AND userId = :userId AND active = true',
+                {
+                    replacements: { id, userId },
+                    type: db.sequelize.QueryTypes.SELECT
+                }
+            )
+            return income.length > 0 ? income[0] : null
+        } catch (err) {
+            console.error('Error getting income by ID:', err)
+            throw err
+        }
+    }
+
+    static async updateIncome({id, userId, amount, description, category, date}) {
+        try {
+            const updates = []
+            const replacements = { id, userId }
+
+            if (amount !== undefined && amount !== null) {
+                updates.push('amount = :amount')
+                replacements.amount = amount
+            }
+
+            if (description !== undefined && description !== null) {
+                updates.push('description = :description')
+                replacements.description = description
+            }
+
+            if (category !== undefined && category !== null) {
+                updates.push('categoryId = :category')
+                replacements.category = category
+            }
+
+            if (date !== undefined && date !== null) {
+                updates.push('date = :date')
+                replacements.date = date
+            }
+
+            if (updates.length === 0) {
+                return { success: false, message: 'No fields to update' }
+            }
+
+            const query = `UPDATE income SET ${updates.join(', ')} WHERE id = :id AND userId = :userId AND active = true`
+            const result = await db.sequelize.query(query, {
+                replacements,
+                type: db.sequelize.QueryTypes.UPDATE
+            })
+
+            if (result[0] === 0) {
+                return { success: false, message: 'Income not found or already deleted' }
+            }
+
+            console.log('Income updated successfully:', id)
+            return { success: true, message: 'Income updated successfully' }
+        } catch (err) {
+            console.error('Error updating income:', err)
+            throw err
+        }
+    }
 }

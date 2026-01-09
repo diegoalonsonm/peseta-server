@@ -124,4 +124,67 @@ export class ExpenseModel {
             throw err
         }
     }
+
+    static async getExpenseById({id, userId}) {
+        try {
+            const expense = await db.sequelize.query(
+                'SELECT * FROM expense WHERE id = :id AND userId = :userId AND active = true',
+                {
+                    replacements: { id, userId },
+                    type: db.sequelize.QueryTypes.SELECT
+                }
+            )
+            return expense.length > 0 ? expense[0] : null
+        } catch (err) {
+            console.error('Error getting expense by ID:', err)
+            throw err
+        }
+    }
+
+    static async updateExpense({id, userId, amount, description, category, date}) {
+        try {
+            const updates = []
+            const replacements = { id, userId }
+
+            if (amount !== undefined && amount !== null) {
+                updates.push('amount = :amount')
+                replacements.amount = amount
+            }
+
+            if (description !== undefined && description !== null) {
+                updates.push('description = :description')
+                replacements.description = description
+            }
+
+            if (category !== undefined && category !== null) {
+                updates.push('categoryId = :category')
+                replacements.category = category
+            }
+
+            if (date !== undefined && date !== null) {
+                updates.push('date = :date')
+                replacements.date = date
+            }
+
+            if (updates.length === 0) {
+                return { success: false, message: 'No fields to update' }
+            }
+
+            const query = `UPDATE expense SET ${updates.join(', ')} WHERE id = :id AND userId = :userId AND active = true`
+            const result = await db.sequelize.query(query, {
+                replacements,
+                type: db.sequelize.QueryTypes.UPDATE
+            })
+
+            if (result[0] === 0) {
+                return { success: false, message: 'Expense not found or already deleted' }
+            }
+
+            console.log('Expense updated successfully:', id)
+            return { success: true, message: 'Expense updated successfully' }
+        } catch (err) {
+            console.error('Error updating expense:', err)
+            throw err
+        }
+    }
 }

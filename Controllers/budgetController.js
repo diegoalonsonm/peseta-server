@@ -280,4 +280,36 @@ export class BudgetController {
             res.status(500).send('error: ' + err.message);
         }
     }
+
+    /**
+     * GET /budgets/single/:budgetId?email=user@example.com
+     * Get a single budget by ID
+     */
+    static async getBudgetById(req, res) {
+        try {
+            const { budgetId } = req.params;
+            const email = req.query.email;
+
+            if (!email) {
+                return res.status(400).send('Email is required');
+            }
+
+            const userId = await UserModel.getUserIdByEmail({ email });
+
+            if (!userId) {
+                return res.status(404).send('User not found');
+            }
+
+            const budget = await BudgetModel.getBudgetById({ budgetId, userId });
+
+            if (!budget) {
+                return res.status(404).send('Budget not found');
+            }
+
+            res.json(budget);
+        } catch (err) {
+            console.error('Error in getBudgetById:', err);
+            res.status(500).send('error: ' + err.message);
+        }
+    }
 }

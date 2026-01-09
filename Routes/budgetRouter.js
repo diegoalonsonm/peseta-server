@@ -8,6 +8,7 @@ budgetRouter.get('/:email', BudgetController.getAllBudgets);
 budgetRouter.get('/:email/alerts', BudgetController.getBudgetAlerts);
 budgetRouter.get('/:email/summary', BudgetController.getBudgetSummary);
 budgetRouter.get('/:email/category/:categoryId', BudgetController.getBudgetByCategory);
+budgetRouter.get('/single/:budgetId', BudgetController.getBudgetById);
 
 // POST routes
 budgetRouter.post('/', BudgetController.createBudget);
