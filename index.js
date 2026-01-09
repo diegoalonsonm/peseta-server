@@ -20,6 +20,7 @@ const app = express()
 app.use(express.json())
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
+    origin: ['http://localhost:3000', 'https://cash-controller-client.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }))
@@ -35,6 +36,7 @@ app.use('/budgets', budgetRouter)
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies.token
+    console.log(token)
     if (!token) {
         return res.status(401).send('Access Denied')
     } else {
