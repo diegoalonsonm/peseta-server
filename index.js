@@ -102,14 +102,15 @@ app.post('/login', async (req, res) => {
 
         // Cookie configuration for mobile browser compatibility
         const isProduction = process.env.NODE_ENV === 'production'
-        res.cookie('token', token, {
+        const cookieOptions = {
             httpOnly: true,
-            secure: true, // Always use secure in production (required for sameSite: 'none')
+            secure: isProduction, // Only secure in production (required for sameSite: 'none')
             sameSite: isProduction ? 'none' : 'lax',
             maxAge: 3600000, // 1 hour in milliseconds
             path: '/'
-        })
-        console.log('Login successful for:', email, 'Cookie settings:', { secure: true, sameSite: isProduction ? 'none' : 'lax' })
+        }
+        res.cookie('token', token, cookieOptions)
+        console.log('Login successful for:', email, 'Cookie settings:', cookieOptions)
         return res.status(200).send('Login successful')
     } catch (err) {
         console.error('Login error:', err)
@@ -121,7 +122,7 @@ app.get('/logout', (req, res) => {
     const isProduction = process.env.NODE_ENV === 'production'
     res.clearCookie('token', {
         httpOnly: true,
-        secure: true, // Must match the cookie settings used when setting the cookie
+        secure: isProduction, // Must match the cookie settings used when setting the cookie
         sameSite: isProduction ? 'none' : 'lax',
         path: '/'
     })
