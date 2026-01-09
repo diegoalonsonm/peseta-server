@@ -20,7 +20,6 @@ const app = express()
 app.use(express.json())
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
-    origin: ['http://localhost:3000', 'https://cash-controller-client.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }))
@@ -98,5 +97,12 @@ app.get('/logout', (req, res) => {
     return res.status(200).send('Logged out')
 })
 
-app.listen(PORT, () => {
-})
+// Only start server when running locally (not on Vercel)
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`)
+    })
+}
+
+// Export for Vercel serverless function
+export default app
