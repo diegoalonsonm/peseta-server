@@ -83,7 +83,12 @@ app.post('/login', async (req, res) => {
 
         // Sign token with user data (don't include password)
         const token = jwt.sign({ email: user.email, id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' })
-        res.cookie('token', token, { httpOnly: true })
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 3600000 // 1 hour in milliseconds
+        })
         console.log('Login successful for:', email)
         return res.status(200).send('Login successful')
     } catch (err) {
@@ -93,7 +98,11 @@ app.post('/login', async (req, res) => {
 })
 
 app.get('/logout', (req, res) => {
-    res.clearCookie('token')
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    })
     return res.status(200).send('Logged out')
 })
 
