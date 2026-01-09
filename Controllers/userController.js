@@ -71,7 +71,6 @@ export class UserController {
             res.json(balance)
         } catch (err) {
             res.status(500).send('error: ' + err.message)
-            console.log(err)
         }
     }
 
@@ -97,10 +96,51 @@ export class UserController {
     static async updateUserInfo(req, res) {
         try {
             const email = req.params.email
-            const body = req.body
-            const user = {email, ...body}
+            const { name, lastName, password } = req.body
+
+            // Validate inputs if provided
+            if (name !== undefined && name !== null && name !== '') {
+                if (name.trim().length < 2) {
+                    return res.status(400).json({
+                        error: 'El nombre debe tener al menos 2 caracteres'
+                    })
+                }
+            }
+
+            if (lastName !== undefined && lastName !== null && lastName !== '') {
+                if (lastName.trim().length < 2) {
+                    return res.status(400).json({
+                        error: 'El apellido debe tener al menos 2 caracteres'
+                    })
+                }
+            }
+
+            if (password !== undefined && password !== null && password !== '') {
+                if (password.length < 6) {
+                    return res.status(400).json({
+                        error: 'La contraseña debe tener al menos 6 caracteres'
+                    })
+                }
+            }
+
+            // Check if user exists
+            const userExists = await UserModel.getOneById({email})
+            if (!userExists || userExists.length === 0) {
+                return res.status(404).json({ error: 'Usuario no encontrado' })
+            }
+
+            // Only pass provided fields to model
+            const user = { email }
+            if (name !== undefined && name !== null && name !== '') user.name = name
+            if (lastName !== undefined && lastName !== null && lastName !== '') user.lastName = lastName
+            if (password !== undefined && password !== null && password !== '') user.password = password
+
             const updatedUser = await UserModel.updateUserInfo({user})
-            res.json(updatedUser)
+            res.json({
+                success: true,
+                message: 'Perfil actualizado correctamente',
+                updatedUser
+            })
         } catch (err) {
             res.status(500).send('error: ' + err.message)
         }

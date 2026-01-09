@@ -1,59 +1,45 @@
-create database cashController;
-use cashController;
+DROP DATABASE IF EXISTS cashController;
+CREATE DATABASE cashController;
+USE cashController;
 
-create table users (
-    name varchar(25) not null,
-    lastName varchar(40) not null,
-    email varchar(30) not null primary key,
-    password varchar(30) not null,
-    availableBudget decimal (10, 2),
-    profilePic text
+CREATE TABLE category (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    description VARCHAR(50) NOT NULL
 );
 
-insert into users (name, lastName, email, password, availableBudget) values ('Diego', 'Naranjo', 'diegoalonsonm@gmail.com', '*', 133.85);
-insert into users (name, lastName, email, password, availableBudget) values ('Juan', 'Perez', 'juanperez@gmail.com', '*', 100.00);
-insert into users (name, lastName, email, password, availableBudget) values ('Maria', 'Gonzalez', 'gonza.maria@apple.com', '*', 200.00);
-insert into users (name, lastName, email, password) values ('Carlos', 'Jimenez', 'jimenezcarlitos@gmail.com', '*');
-
-select * from users;
-
-create table expense (
-	id int auto_increment primary key,
-    description varchar(255) not null,
-    categoryId int not null,
-    amount decimal(10, 2),
-    date date not null,
-    userEmail varchar(30) not null,
-    foreign key (userEmail) references users(email),
-    foreign key (categoryId) references category(id)
+CREATE TABLE users (
+    id CHAR(36) PRIMARY KEY, 
+    name VARCHAR(50) NOT NULL,
+    lastName VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    availableBudget DECIMAL(12, 2) DEFAULT 0.00,
+    profilePic TEXT
 );
 
-select * from expense order by date desc;
-SELECT * FROM expense WHERE userEmail = 'diegoalonsonm@gmail.com' order by date desc;
-
-insert into expense (description, categoryId, amount, date, userEmail) values ('Lunch', 1, 10.00, '2024-04-03', 'diegoalonsonm@gmail.com');
-insert into expense (description, categoryId, amount, date, userEmail) values ('Train', 2, 2.00, '2024-04-03', 'diegoalonsonm@gmail.com');
-
-create table income (
-	id int auto_increment primary key,
-    description varchar(255) not null,
-    categoryId int not null,
-    amount decimal(10, 2),
-    date date not null,
-    userEmail varchar(30) not null,
-    foreign key (userEmail) references users(email),
-    foreign key (categoryId) references category(id)
+CREATE TABLE expense (
+    id CHAR(36) PRIMARY KEY,
+    description VARCHAR(255) NOT NULL,
+    categoryId INT NOT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    date DATE NOT NULL,
+    userId CHAR(36) NOT NULL, 
+    active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES category(id)
 );
 
-insert into income (description, categoryId, amount, date, userEmail) values ('Salary', 9, 1000.00, '2024-04-03', 'diegoalonsonm@gmail.com');
-insert into income (description, categoryId, amount, date, userEmail) values ('Investment', 10, 200.00, '2024-04-03', 'diegoalonsonm@gmail.com');
-
-create table category (
-	id int auto_increment primary key,
-    description varchar(255) not null
+CREATE TABLE income (
+    id CHAR(36) PRIMARY KEY,
+    description VARCHAR(255) NOT NULL,
+    categoryId INT NOT NULL,
+    amount DECIMAL(12, 2) NOT NULL,
+    date DATE NOT NULL,
+    userId CHAR(36) NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES category(id)
 );
-
-select * from category;
 
 insert into category (description) values ('Food');
 insert into category (description) values ('Transport');
@@ -70,3 +56,22 @@ insert into category (description) values ('Savings');
 insert into category (description) values ('Loans');
 insert into category (description) values ('Insurance');
 insert into category (description) values ('Others');
+
+CREATE TABLE budget (
+    id CHAR(36) PRIMARY KEY,            
+    userId CHAR(36) NOT NULL,           
+    categoryId INT NOT NULL,            
+    limitAmount DECIMAL(12, 2) NOT NULL,
+    periodType ENUM('weekly', 'biweekly', 'monthly') NOT NULL,
+    startDate DATE NOT NULL,
+    startDate DATE NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (categoryId) REFERENCES category(id),
+    UNIQUE KEY unique_active_budget (userId, categoryId, active)
+);
+
+CREATE INDEX idx_budget_user_active ON budget(userId, active);
+CREATE INDEX idx_budget_category ON budget(categoryId);
